@@ -69,4 +69,9 @@ Harness check: Fast-WAM on 10 unperturbed LIBERO cases through the same code pat
 Pilot, arm B, 500 steps, batch 16, H100 96 GB: peak GPU memory 49.1 GB; 197 prompt tokens per
 sample, 64 for the main camera; 1.62–1.65 s per step; flow loss 0.064–0.068; future loss 0.95–0.97
 (from 1.0); future cosine 0.20; fraction of frames with a valid 1-s-ahead target 0.91–0.95.
-Arm A trained (6,000 steps, 2 h, 48.5 GB peak, 1.08 s/step compute) and is being evaluated on Test 3's 700 cases and Test 2's 5 cm and 10 cm mid-reach shifts; arm B training.
+Arm A trained (6,000 steps, 2 h on an H100, 48.5 GB peak, 1.08 s/step) and arm B trained (6,000 steps,
+1.5 h on an H200, 49.1 GB peak, 0.89 s/step). Arm B's future loss fell from 0.94 at step 1 to 0.58 at
+step 6,000; the cosine between predicted and true 1-s-ahead embedding rose from 0.01 to 0.59 (pilot: 0.20
+after 500 steps). Both arms are being evaluated on Test 3's 700 cases and Test 2's 5 cm and 10 cm
+mid-reach shifts; arm C training. Arm A so far (partial): object 84.1 / 90.8 (halves a/b) vs stock 88.6 / 87.4;
+spatial 84.1 / 82.8 vs 89.8 / 81.6; goal-b 71.3 vs 67.8; 10 cm mid-reach 60 vs 55; 5 cm 85 vs 80.
