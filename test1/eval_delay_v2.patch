@@ -1,0 +1,58 @@
+--- eval_delay.py
++++ eval_delay.py
+@@ -61,6 +61,18 @@
+ from lerobot.utils.constants import ACTION, OBS_STR
+ from lerobot.utils.utils import inside_slurm
+ 
++# Newer LeRobot (the Fast-WAM venv) builds observations with prepare_canonical_observation and resets the
++# processors each episode. LeRobot 0.6.1 (the Alpha-S venv) has neither, so these imports fail there and the
++# Alpha-S path stays exactly as Griffin wrote it.
++try:
++    from lerobot.envs.utils import prepare_canonical_observation
++except ImportError:
++    prepare_canonical_observation = None
++try:
++    from lerobot.processor import bind_relative_anchor
++except ImportError:
++    bind_relative_anchor = None
++
+ _GRIFFIN_FLAGS = {
+     "n_action_steps": "GRIFFIN_N_ACTION_STEPS",
+     "fm_num_steps": "GRIFFIN_FM_NUM_STEPS",
+@@ -116,7 +128,18 @@
+     """
+     assert isinstance(policy, nn.Module), "Policy must be a PyTorch nn module."
+     policy.reset()
++    new_lerobot = prepare_canonical_observation is not None
++    if new_lerobot:  # mirror newer LeRobot's stock rollout
++        preprocessor.reset()
++        postprocessor.reset()
++        if bind_relative_anchor is not None:
++            bind_relative_anchor(policy, preprocessor)
+     observation, info = env.reset(seed=seeds)
++    prepare = (
++        prepare_canonical_observation
++        if new_lerobot and env.metadata.get("canonical_observations", False)
++        else preprocess_observation
++    )
+     if render_callback is not None:
+         render_callback(env)
+ 
+@@ -138,7 +161,7 @@
+     action_queue: deque = deque()  # env-ready actions, numpy (B, action_dim)
+ 
+     while not np.all(done) and step < max_steps:
+-        proc_obs = preprocess_observation(observation)
++        proc_obs = prepare(observation)
+         if return_observations:
+             all_observations.append(deepcopy(proc_obs))
+ 
+@@ -206,7 +229,7 @@
+         progbar.update()
+ 
+     if return_observations:
+-        all_observations.append(deepcopy(preprocess_observation(observation)))
++        all_observations.append(deepcopy(prepare(observation)))
+ 
+     ret = {
+         ACTION: torch.stack(all_actions, dim=1),
