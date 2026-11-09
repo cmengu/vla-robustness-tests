@@ -1,0 +1,18 @@
+python3 -I t3break.py, 9 Nov 2026 18:40 SGT. All 700 cases paired. p = exact two-sided McNemar.
+
+== by perturbation factor (all suites)
+group                           n  Alpha-S%  FastWAM%    gap  A>F  F>A       p
+camera view                   100      75.0      25.0   50.0   54    4  0.0000
+robot start pose              100      76.0      41.0   35.0   39    4  0.0000
+layout: table                 100      89.0      55.0   34.0   38    4  0.0000
+sensor noise                  100      69.0      39.0   30.0   39    9  0.0000
+layout: extra objects         100      78.0      56.0   22.0   25    3  0.0000
+language                      100      87.0      68.0   19.0   23    4  0.0003
+lighting                      100      88.0      79.0    9.0   13    4  0.0490
+all                           700      80.3      51.9   28.4  231   32  0.0000
+
+== by suite (from per-job eval_info.json)
+libero_spatial                175      85.7      51.4
+libero_object                 175      88.0      71.4
+libero_goal                   175      70.3      40.0
+libero_10                     175      77.1      44.6

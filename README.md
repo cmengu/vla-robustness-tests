@@ -1,15 +1,14 @@
 # Does world-action training make a robot policy more robust?
 
 A paired stress test of two open-weight LIBERO policies, and a controlled follow-up on one of them.
-Status as of 9 November 2026: Tests 1–3 complete (one Alpha-S job of 44 cases still running),
-Test 4 training.
+Status as of 9 November 2026: Tests 1–3 complete, Test 4 training.
 
 **Summary.** On three stress tests in simulation, the world-action model Fast-WAM was no more robust
 than Griffin's plain vision-language-action model Alpha-S. Under delayed actions the two degrade at
 the same rate (Test 1). When the target object is moved 10 cm, Fast-WAM succeeds in 0–10% of
-episodes and Alpha-S in 55–70% (Test 2). On 656 perturbed LIBERO-Plus cases evaluated for both
-models, Alpha-S succeeds 80.5% of the time and Fast-WAM 52.0% (Test 3; 215 cases won by Alpha-S
-alone against 28 by Fast-WAM alone). The deficit is largest when the geometry of the scene changes
+episodes and Alpha-S in 55–70% (Test 2). On 700 perturbed LIBERO-Plus cases evaluated for both
+models, Alpha-S succeeds 80.3% of the time and Fast-WAM 51.9% (Test 3; 231 cases won by Alpha-S
+alone against 32 by Fast-WAM alone). The deficit is largest when the geometry of the scene changes
 (camera viewpoint: 25% vs 75%; robot start pose: 41% vs 76%) and smallest under lighting changes
 (79% vs 88%). Because the two models differ in more than their training objective, Tests 1–3
 compare models, not objectives. Test 4 isolates the objective: the same Alpha-S checkpoint is
@@ -43,7 +42,7 @@ Three stress tests on the released checkpoints, then one controlled experiment.
 | 3 | A [LIBERO-Plus](https://arxiv.org/abs/2510.13626) perturbation: camera viewpoint, robot start pose, table layout, extra objects, lighting, sensor noise or reworded instruction | 700 cases sampled across four suites, 100 per factor, one episode each, identical cases for both models | paired success; exact McNemar test on discordant pairs |
 | 4 | Fine-tune Alpha-S 6,000 steps three ways: A stock; B plus a head predicting the V-JEPA 2 embedding of the main camera 1 s ahead (weight 0.1); C the same head predicting the current embedding | arms scored on Test 3's 700 cases and Test 2's 10 cm mid-reach shift | paired, as above |
 
-Test 3's pairing matters: a 28-point gap on 656 shared cases is a different claim from a 28-point
+Test 3's pairing matters: a 28-point gap on 700 shared cases is a different claim from a 28-point
 gap on two independent samples. The per-factor breakdown (Section 3.3) was run after the overall
 result was seen; it is reported as a hypothesis for Test 4, not a pre-registered finding.
 
@@ -80,20 +79,20 @@ the move, and is dropped.
 
 ### 3.3 Perturbed scenes (Test 3)
 
-656 paired cases. "A>F" counts cases Alpha-S passed and Fast-WAM failed; "F>A" the reverse.
+700 paired cases, 100 per factor. "A>F" counts cases Alpha-S passed and Fast-WAM failed; "F>A" the reverse.
 
 | What LIBERO-Plus changed | n | Alpha-S % | Fast-WAM % | Gap | A>F | F>A | p |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | Camera viewpoint | 100 | 75.0 | 25.0 | 50.0 | 54 | 4 | <0.0001 |
 | Robot start pose | 100 | 76.0 | 41.0 | 35.0 | 39 | 4 | <0.0001 |
 | Table layout | 100 | 89.0 | 55.0 | 34.0 | 38 | 4 | <0.0001 |
-| Sensor noise | 75 | 68.0 | 38.7 | 29.3 | 29 | 7 | 0.0003 |
-| Language rewording | 88 | 86.4 | 65.9 | 20.5 | 21 | 3 | 0.0003 |
-| Extra objects | 93 | 78.5 | 58.1 | 20.4 | 21 | 2 | 0.0001 |
+| Sensor noise | 100 | 69.0 | 39.0 | 30.0 | 39 | 9 | <0.0001 |
+| Extra objects | 100 | 78.0 | 56.0 | 22.0 | 25 | 3 | <0.0001 |
+| Language rewording | 100 | 87.0 | 68.0 | 19.0 | 23 | 4 | 0.0003 |
 | Lighting | 100 | 88.0 | 79.0 | 9.0 | 13 | 4 | 0.049 |
-| All | 656 | 80.5 | 52.0 | 28.5 | 215 | 28 | <0.0001 |
+| All | 700 | 80.3 | 51.9 | 28.4 | 231 | 32 | <0.0001 |
 
-By suite: Spatial 85.7 vs 51.4, Object 88.0 vs 71.4, Goal 70.3 vs 40.0, Long 77.1 vs 42.7 (131 cases).
+By suite: Spatial 85.7 vs 51.4, Object 88.0 vs 71.4, Goal 70.3 vs 40.0, Long 77.1 vs 44.6 (175 cases each).
 Fast-WAM scores 100% on 10 unperturbed LIBERO cases through the same code path, so the drop is the
 perturbations, not the harness. Lighting is the one factor on which the models are close. The
 three factors with the largest gaps (camera, start pose, layout) all change *where* things are in
@@ -127,7 +126,8 @@ Arms are evaluated on the stress tests rather than standard LIBERO because Alpha
   an AST comparison of its rollout loop against Test 1's.
 - **Conclusion.** Test 2 cells are 20 episodes. Test 3's factor breakdown is post hoc. McNemar
   p-values are exact two-sided binomial; no multiplicity correction is applied across the 7 factors,
-  though 6 of 7 survive one at 0.05/7.
+  though 6 of 7 survive one at 0.05/7 and the ranking was unchanged between the 656-case and the
+  700-case analyses.
 - **External.** Simulation only (MuJoCo via robosuite), LIBERO tasks only, one checkpoint per
   model. The Fast-WAM checkpoint was run with the inputs its card specifies (two 224 px cameras);
   no attempt was made to tune it for the perturbed conditions.
@@ -138,7 +138,7 @@ Arms are evaluated on the stress tests rather than standard LIBERO because Alpha
 |---|---|
 | [test1](test1) | `eval_delay.py`: LeRobot's LIBERO eval with a delay buffer; `eval_delay.patch` against the stock script |
 | [test2](test2) | `eval_shift.py`: the same loop with the object shift; `README.md` explains the shift geometry; Slurm pilot scripts |
-| [test3](test3) | Slurm jobs over the fixed 700-case sample (`t3_selection.json`); `analysis/` holds the name dump, the paired breakdown script and its 9 Nov output |
+| [test3](test3) | Slurm jobs over the fixed 700-case sample (`t3_selection.json`); `analysis/` holds the name dump, the paired breakdown script and its 9 Nov outputs |
 | [test4](test4) | Training entry point, head, targets, probe, unit tests and Slurm jobs; its own README |
 | [RESULTS.md](RESULTS.md) | All result tables in one place |
 
