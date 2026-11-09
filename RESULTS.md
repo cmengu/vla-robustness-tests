@@ -73,5 +73,7 @@ Arm A trained (6,000 steps, 2 h on an H100, 48.5 GB peak, 1.08 s/step) and arm B
 1.5 h on an H200, 49.1 GB peak, 0.89 s/step). Arm B's future loss fell from 0.94 at step 1 to 0.58 at
 step 6,000; the cosine between predicted and true 1-s-ahead embedding rose from 0.01 to 0.59 (pilot: 0.20
 after 500 steps). Both arms are being evaluated on Test 3's 700 cases and Test 2's 5 cm and 10 cm
-mid-reach shifts; arm C training. Arm A so far (partial): object 84.1 / 90.8 (halves a/b) vs stock 88.6 / 87.4;
+mid-reach shifts. Arm C trained (6,000 steps, H200, 49.1 GB peak): its head, predicting the current
+embedding, reached loss 0.08 and cosine 0.96, against 0.58 and 0.59 for B's 1-s-ahead target. Arm A vs stock on
+612 paired cases: 81.0 vs 81.4, 40 vs 42 discordant, p = 0.91. Arm A so far (partial): object 84.1 / 90.8 (halves a/b) vs stock 88.6 / 87.4;
 spatial 84.1 / 82.8 vs 89.8 / 81.6; goal-b 71.3 vs 67.8; 10 cm mid-reach 60 vs 55; 5 cm 85 vs 80.
