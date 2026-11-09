@@ -1,41 +1,148 @@
-# VLA robustness tests
+# Does world-action training make a robot policy more robust?
 
-Does training a robot policy as a world-action model make it more robust? Four stress tests on
-two open-weight LIBERO policies, run in simulation on one GPU each:
+A paired stress test of two open-weight LIBERO policies, and a controlled follow-up on one of them.
+Status as of 9 November 2026: Tests 1–3 complete (one Alpha-S job of 44 cases still running),
+Test 4 training.
 
-- **Alpha-S**: [Griffin-Alpha-S-LIBERO](https://huggingface.co/griffinlabs/Griffin-Alpha-S-LIBERO),
-  a plain vision-language-action model (Qwen3-VL 4B backbone, flow-matching action expert).
-- **Fast-WAM**: [fastwam_libero_uncond_2cam224](https://huggingface.co/lerobot/fastwam_libero_uncond_2cam224),
-  trained with a world-action objective ([arXiv 2603.16666](https://arxiv.org/abs/2603.16666)).
+**Summary.** On three stress tests in simulation, the world-action model Fast-WAM was no more robust
+than Griffin's plain vision-language-action model Alpha-S. Under delayed actions the two degrade at
+the same rate (Test 1). When the target object is moved 10 cm, Fast-WAM succeeds in 0–10% of
+episodes and Alpha-S in 55–70% (Test 2). On 656 perturbed LIBERO-Plus cases evaluated for both
+models, Alpha-S succeeds 80.5% of the time and Fast-WAM 52.0% (Test 3; 215 cases won by Alpha-S
+alone against 28 by Fast-WAM alone). The deficit is largest when the geometry of the scene changes
+(camera viewpoint: 25% vs 75%; robot start pose: 41% vs 76%) and smallest under lighting changes
+(79% vs 88%). Because the two models differ in more than their training objective, Tests 1–3
+compare models, not objectives. Test 4 isolates the objective: the same Alpha-S checkpoint is
+fine-tuned with and without a head that predicts the scene one second ahead, and each arm is scored
+on the same stress tests.
 
-**Result so far: the world-action model is no more robust, and under changed scenes it is 29 points
-worse** (51% vs 80% on 613 paired LIBERO-Plus cases). Full tables: [RESULTS.md](RESULTS.md).
+## 1. Question
 
-| Test | Question | Folder | Status |
+World-action models (WAMs) train a policy to predict future observations alongside actions, on the
+argument that a policy that models how the scene evolves should cope better when the scene departs
+from the training distribution: late actions, moved objects, changed viewpoints. This repository
+asks whether that holds for a WAM one can actually download, measured against a plain VLA on the
+same tasks, the same simulator and the same cases.
+
+Two policies, both trained on LIBERO and both at 94–100% on the standard LIBERO suites:
+
+- **Alpha-S** — [griffinlabs/Griffin-Alpha-S-LIBERO](https://huggingface.co/griffinlabs/Griffin-Alpha-S-LIBERO).
+  Qwen3-VL 4B backbone and a flow-matching action expert. No future prediction.
+- **Fast-WAM** — [lerobot/fastwam_libero_uncond_2cam224](https://huggingface.co/lerobot/fastwam_libero_uncond_2cam224),
+  from [arXiv 2603.16666](https://arxiv.org/abs/2603.16666). Trained with a world-action objective.
+  The paper reports standard LIBERO only (no LIBERO-Plus numbers).
+
+## 2. Design
+
+Three stress tests on the released checkpoints, then one controlled experiment.
+
+| Test | Stress | Sample | Statistic |
 |---|---|---|---|
-| 1 | Does success hold when actions arrive late? | [test1](test1) | done |
-| 2 | Can the policy follow an object that moves mid-episode? | [test2](test2) | done |
-| 3 | Does success hold when the scene is perturbed (LIBERO-Plus)? | [test3](test3) | Alpha-S: 87 of 700 cases still running |
-| 4 | Does adding a 1-second future-prediction head to Alpha-S help? | [test4](test4) | training |
+| 1 | Each action is applied d steps (0.1 s each) after the frame it was computed from, d ∈ {0, 2, 5, 10, 20} | libero_object, 100 episodes per point | success rate |
+| 2 | The target object is slid 2, 5 or 10 cm sideways, before the first action or when the gripper first comes within 15 cm | libero_object, 20 episodes per cell | success rate |
+| 3 | A [LIBERO-Plus](https://arxiv.org/abs/2510.13626) perturbation: camera viewpoint, robot start pose, table layout, extra objects, lighting, sensor noise or reworded instruction | 700 cases sampled across four suites, 100 per factor, one episode each, identical cases for both models | paired success; exact McNemar test on discordant pairs |
+| 4 | Fine-tune Alpha-S 6,000 steps three ways: A stock; B plus a head predicting the V-JEPA 2 embedding of the main camera 1 s ahead (weight 0.1); C the same head predicting the current embedding | arms scored on Test 3's 700 cases and Test 2's 10 cm mid-reach shift | paired, as above |
 
-Tests 1-3 compare two different models; only Test 4 isolates the world-model objective.
+Test 3's pairing matters: a 28-point gap on 656 shared cases is a different claim from a 28-point
+gap on two independent samples. The per-factor breakdown (Section 3.3) was run after the overall
+result was seen; it is reported as a hypothesis for Test 4, not a pre-registered finding.
 
-## How the tests work
+Test 4's design choices are set out in [test4/README.md](test4/README.md), including why the head
+reads the input of the last backbone layer, why the target is a *change* in embedding, and why arm C
+exists (to separate "any auxiliary head helps" from "predicting the future helps").
 
-- `test1/eval_delay.py`: LeRobot's LIBERO eval with a delay buffer. An action computed from the frame
-  at step t is applied at step t + d. `--griffin.delay=d`; `--griffin.n_action_steps` sets how often the
-  policy re-plans (1 = every step, 10 = every chunk). `eval_delay.patch` is the diff against the stock script.
-- `test2/eval_shift.py`: the same loop with the target object slid 2, 5 or 10 cm sideways, either before
-  the first action (`step0`) or when the gripper first comes within 15 cm (`midreach`). See `test2/README.md`.
-- `test3/`: the stock eval over a fixed sample of 700 [LIBERO-Plus](https://arxiv.org/abs/2510.13626) cases
-  (`t3_selection.json`), split into Slurm jobs that fit a 3-hour limit.
-- `test4/`: fine-tunes Alpha-S with LeRobot's own training loop plus an optional head that predicts the
-  V-JEPA 2 embedding of the main camera 1 s ahead. Nothing in LeRobot or Griffin's plugin is edited;
-  see `test4/README.md` for the design and the unit tests.
+## 3. Results
 
-## Running
+Full tables, including per-suite and per-suite-by-factor breakdowns, are in
+[RESULTS.md](RESULTS.md) and [test3/analysis/breakdown-2026-11-09.txt](test3/analysis/breakdown-2026-11-09.txt).
 
-Each folder's `*.sh` is a Slurm job as run on a university cluster (one H100/H200/A100 per job).
-Paths are set in each script's header or in `test4/env.sh`. Environments: LeRobot 0.6.1 with Griffin's
-`alpha-s` plugin for Alpha-S; LeRobot 0.6.1 for Fast-WAM; LIBERO-Plus from its own repository for Test 3.
-Results in RESULTS.md come from the `eval_info.json` each job writes.
+### 3.1 Delayed actions (Test 1)
+
+| Delay (steps) | 0 | 2 | 5 | 10 | 20 |
+|---|---:|---:|---:|---:|---:|
+| Fast-WAM | 94 | 94 | 85 | 80 | 41 |
+| Alpha-S, re-plan every step | 99 | 93 | 95 | 81 | 50 |
+| Alpha-S, re-plan every 10 steps | 97 | 96 | 89 | 81 | 34 |
+
+The curves run together. No delay advantage for the world-action model.
+
+### 3.2 Moved object (Test 2)
+
+| Move | 2 cm | 5 cm | 10 cm |
+|---|---:|---:|---:|
+| At the start: Alpha-S / Fast-WAM | 100 / 95 | 95 / 70 | 70 / 10 |
+| Mid-reach: Alpha-S / Fast-WAM | 100 / 100 | 80 / 60 | 55 / 0 |
+
+With no move both score 100%. At 10 cm Fast-WAM collapses. Cells hold 20 episodes, so differences
+under about 25 points are within noise; the 10 cm cells are not. A third mode, "blind" (camera frozen
+after the move), scored 0% for both models at every size: it measured the frozen camera rather than
+the move, and is dropped.
+
+### 3.3 Perturbed scenes (Test 3)
+
+656 paired cases. "A>F" counts cases Alpha-S passed and Fast-WAM failed; "F>A" the reverse.
+
+| What LIBERO-Plus changed | n | Alpha-S % | Fast-WAM % | Gap | A>F | F>A | p |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Camera viewpoint | 100 | 75.0 | 25.0 | 50.0 | 54 | 4 | <0.0001 |
+| Robot start pose | 100 | 76.0 | 41.0 | 35.0 | 39 | 4 | <0.0001 |
+| Table layout | 100 | 89.0 | 55.0 | 34.0 | 38 | 4 | <0.0001 |
+| Sensor noise | 75 | 68.0 | 38.7 | 29.3 | 29 | 7 | 0.0003 |
+| Language rewording | 88 | 86.4 | 65.9 | 20.5 | 21 | 3 | 0.0003 |
+| Extra objects | 93 | 78.5 | 58.1 | 20.4 | 21 | 2 | 0.0001 |
+| Lighting | 100 | 88.0 | 79.0 | 9.0 | 13 | 4 | 0.049 |
+| All | 656 | 80.5 | 52.0 | 28.5 | 215 | 28 | <0.0001 |
+
+By suite: Spatial 85.7 vs 51.4, Object 88.0 vs 71.4, Goal 70.3 vs 40.0, Long 77.1 vs 42.7 (131 cases).
+Fast-WAM scores 100% on 10 unperturbed LIBERO cases through the same code path, so the drop is the
+perturbations, not the harness. Lighting is the one factor on which the models are close. The
+three factors with the largest gaps (camera, start pose, layout) all change *where* things are in
+the image; lighting changes only how they look.
+
+### 3.4 Test 4 pilot
+
+500 steps of arm B: 49 GB peak GPU memory, 1.65 s per step (about 2.75 h per 6,000-step arm),
+future loss falling from 1.0 to 0.95, cosine between prediction and target 0.20. The lesson is
+learnable but hard; arm B may end no better than A, which would itself be a result.
+
+## 4. What we expect from Test 4, stated before the arms run
+
+- If future prediction is what makes a policy robust, arm B beats arm A on the geometry factors of
+  Test 3 (camera, start pose, layout) and on the 10 cm mid-reach shift, and arm C does not.
+- If any auxiliary visual head helps, B and C both beat A.
+- If the 6,000-step budget is too short for the head to change the backbone, all three tie; the
+  probe (`test4/probe.py`) then tells us whether the lesson reached the backbone at all.
+
+Arms are evaluated on the stress tests rather than standard LIBERO because Alpha-S already scores
+97–99% there: no headroom, so no test.
+
+## 5. Threats to validity
+
+- **Construct.** Tests 1–3 compare two models that differ in backbone, size, image resolution,
+  training data and action chunking. They show that *this* WAM is less robust than *this* VLA; they do
+  not show that the world-action objective hurts. Test 4 is the controlled comparison.
+- **Internal.** Test 3 runs one episode per case with fixed seeds; a case's outcome is a single
+  Bernoulli draw. The pairing and the discordant-pair counts carry the inference, not the
+  per-case outcomes. Test 2's shift logic is checked by unit tests (`test2/test_shift_logic.py`) and
+  an AST comparison of its rollout loop against Test 1's.
+- **Conclusion.** Test 2 cells are 20 episodes. Test 3's factor breakdown is post hoc. McNemar
+  p-values are exact two-sided binomial; no multiplicity correction is applied across the 7 factors,
+  though 6 of 7 survive one at 0.05/7.
+- **External.** Simulation only (MuJoCo via robosuite), LIBERO tasks only, one checkpoint per
+  model. The Fast-WAM checkpoint was run with the inputs its card specifies (two 224 px cameras);
+  no attempt was made to tune it for the perturbed conditions.
+
+## 6. Repository
+
+| Folder | Contents |
+|---|---|
+| [test1](test1) | `eval_delay.py`: LeRobot's LIBERO eval with a delay buffer; `eval_delay.patch` against the stock script |
+| [test2](test2) | `eval_shift.py`: the same loop with the object shift; `README.md` explains the shift geometry; Slurm pilot scripts |
+| [test3](test3) | Slurm jobs over the fixed 700-case sample (`t3_selection.json`); `analysis/` holds the name dump, the paired breakdown script and its 9 Nov output |
+| [test4](test4) | Training entry point, head, targets, probe, unit tests and Slurm jobs; its own README |
+| [RESULTS.md](RESULTS.md) | All result tables in one place |
+
+Each `*.sh` is a Slurm job as run on a university cluster, one H100/H200/A100 per job. Environments:
+LeRobot 0.6.1 with Griffin's [alpha-s](https://github.com/griffinlabs-ai/alpha-s) plugin for Alpha-S;
+LeRobot 0.6.1 for Fast-WAM; LIBERO-Plus from [sylvestf/LIBERO-plus](https://github.com/sylvestf/LIBERO-plus)
+for Test 3. Every number above is read from the `eval_info.json` each job writes.

@@ -1,0 +1,47 @@
+python3 -I t3break.py, 9 Nov 2026 15:50 SGT. 656 paired cases (Alpha-S's last 44 long-task cases
+were still running; Fast-WAM had all 700). p = exact two-sided McNemar on the discordant pairs.
+
+== by perturbation factor (all suites)
+group                           n  Alpha-S%  FastWAM%    gap  A>F  F>A       p
+camera view                   100      75.0      25.0   50.0   54    4  0.0000
+robot start pose              100      76.0      41.0   35.0   39    4  0.0000
+layout: table                 100      89.0      55.0   34.0   38    4  0.0000
+sensor noise                   75      68.0      38.7   29.3   29    7  0.0003
+language                       88      86.4      65.9   20.5   21    3  0.0003
+layout: extra objects          93      78.5      58.1   20.4   21    2  0.0001
+lighting                      100      88.0      79.0    9.0   13    4  0.0490
+
+== by suite
+libero_spatial                175      85.7      51.4   34.3   69    9  0.0000
+libero_object                 175      88.0      71.4   16.6   35    6  0.0000
+libero_goal                   175      70.3      40.0   30.3   63   10  0.0000
+libero_10                     131      77.1      42.7   34.4   48    3  0.0000
+
+== by suite and factor (25 cases each unless noted)
+libero_spatial / camera view          84.0      28.0   56.0   16    2  0.0013
+libero_spatial / robot start pose     92.0      20.0   72.0   18    0  0.0000
+libero_spatial / layout: table        92.0      76.0   16.0    6    2  0.2891
+libero_spatial / sensor noise         60.0      28.0   32.0   10    2  0.0386
+libero_spatial / language             84.0      56.0   28.0    9    2  0.0654
+libero_spatial / layout: extra objects 100.0     68.0   32.0    8    0  0.0078
+libero_spatial / lighting             88.0      84.0    4.0    2    1  1.0000
+libero_object / camera view           88.0      32.0   56.0   14    0  0.0001
+libero_object / robot start pose      76.0      68.0    8.0    4    2  0.6875
+libero_object / layout: table        100.0      80.0   20.0    5    0  0.0625
+libero_object / sensor noise          84.0      52.0   32.0    9    1  0.0215
+libero_object / language              92.0      92.0    0.0    1    1  1.0000
+libero_object / layout: extra objects 76.0      80.0   -4.0    1    2  1.0000
+libero_object / lighting             100.0      96.0    4.0    1    0  1.0000
+libero_goal / camera view             72.0      24.0   48.0   13    1  0.0018
+libero_goal / robot start pose        60.0      20.0   40.0   10    0  0.0020
+libero_goal / layout: table           80.0      36.0   44.0   13    2  0.0074
+libero_goal / sensor noise            60.0      36.0   24.0   10    4  0.1796
+libero_goal / language                84.0      64.0   20.0    5    0  0.0625
+libero_goal / layout: extra objects   52.0      32.0   20.0    5    0  0.0625
+libero_goal / lighting                84.0      68.0   16.0    7    3  0.3438
+libero_10 / camera view               56.0      16.0   40.0   11    1  0.0063
+libero_10 / robot start pose          76.0      56.0   20.0    7    2  0.1797
+libero_10 / layout: table             84.0      28.0   56.0   14    0  0.0001
+libero_10 / lighting                  80.0      68.0   12.0    3    0  0.2500
+libero_10 / layout: extra objects (18) 88.9     50.0   38.9    7    0  0.0156
+libero_10 / language (13)             84.6      38.5   46.2    6    0  0.0312
