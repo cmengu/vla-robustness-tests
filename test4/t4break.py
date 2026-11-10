@@ -27,7 +27,7 @@ def load(tag):
             if s is None and "successes" in m: s = 100.0 * sum(m["successes"]) / len(m["successes"])
             res[(t["task_group"], int(t["task_id"]))] = s >= 50.0
     return res
-R = {k: load(k) for k in ("alphas", "armA", "armB", "armC")}
+R = {k: load(k) for k in ("alphas", "armA", "armB", "armC", "armA2", "armB2")}
 print("cases:", {k: len(v) for k, v in R.items()})
 def p2(b, c):
     n = b + c
@@ -44,7 +44,9 @@ def table(X, Y, lx, ly, keyfn, title):
     for key, (n, x, y, b, c) in sorted(g.items(), key=lambda kv: -kv[1][0]):
         print("%-28s %4d %7.1f %7.1f %6.1f %5d %5d %7.4f" % (key, n, 100*x/n, 100*y/n, 100*(x-y)/n, b, c, p2(b, c)))
 def geom(k): return "geometry (camera/pose/table)" if factor(name_of[k]) in GEOM else "appearance/other"
-for lx, ly in (("armB", "armA"), ("armC", "armA"), ("armB", "armC"), ("armA", "alphas")):
+PAIRS = (("armB", "armA"), ("armC", "armA"), ("armB", "armC"), ("armA", "alphas"),
+         ("armB2", "armB"), ("armA2", "armA"), ("armB2", "armA"), ("armB2", "armA2"))
+for lx, ly in PAIRS:
     X, Y = R[lx], R[ly]
     if not X or not Y: print(f"\n== {lx} vs {ly}: skipped (no cases yet)"); continue
     table(X, Y, lx, ly, lambda k: "all", "overall")
