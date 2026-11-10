@@ -1,7 +1,7 @@
 # Does world-action training make a robot policy more robust?
 
 A paired stress test of two open-weight LIBERO policies, and a controlled follow-up on one of them.
-Status as of 9 November 2026: Tests 1–3 complete, Test 4 training.
+Status as of 10 November 2026: all four tests complete.
 
 **Summary.** On three stress tests in simulation, the world-action model Fast-WAM was no more robust
 than Griffin's plain vision-language-action model Alpha-S. Under delayed actions the two degrade at
@@ -12,8 +12,13 @@ alone against 32 by Fast-WAM alone). The deficit is largest when the geometry of
 (camera viewpoint: 25% vs 75%; robot start pose: 41% vs 76%) and smallest under lighting changes
 (79% vs 88%). Because the two models differ in more than their training objective, Tests 1–3
 compare models, not objectives. Test 4 isolates the objective: the same Alpha-S checkpoint is
-fine-tuned with and without a head that predicts the scene one second ahead, and each arm is scored
-on the same stress tests.
+fine-tuned three ways, plain (A), with a head that predicts the scene one second ahead (B), and
+with the same head predicting the current frame (C), and each arm is scored on the same 700 cases.
+The three arms tie: 80.6%, 79.9% and 81.0% (B vs A, p = 0.65), on the geometry factors too. The
+head learned its target (cosine 0.59 to the true future embedding) and a linear probe finds the
+future information in B's backbone at the layer the head read (R² 0.21 → 0.33), but the actions
+did not change. At this budget, the world-action lesson altered the representation and not the
+behaviour.
 
 ## 1. Question
 
@@ -98,11 +103,51 @@ perturbations, not the harness. Lighting is the one factor on which the models a
 three factors with the largest gaps (camera, start pose, layout) all change *where* things are in
 the image; lighting changes only how they look.
 
-### 3.4 Test 4 pilot
+### 3.4 Controlled test of the objective (Test 4)
 
-500 steps of arm B: 49 GB peak GPU memory, 1.65 s per step (about 2.75 h per 6,000-step arm),
-future loss falling from 1.0 to 0.95, cosine between prediction and target 0.20. The lesson is
-learnable but hard; arm B may end no better than A, which would itself be a result.
+All three arms trained for 6,000 steps (A: 2 h on an H100; B and C: 1.5 h each on an H200; 49 GB
+peak). B's head learned the future target: loss 0.94 → 0.58, cosine to the true one-second-ahead
+embedding 0.01 → 0.59 (the 500-step pilot had reached 0.20). C's head, predicting the current frame,
+reached loss 0.08 and cosine 0.96. Each arm was then scored on Test 3's 700 cases and Test 2's
+mid-reach shifts through the same code path as the stock model.
+
+| Arm | Spatial | Object | Goal | Long | All 700 | 5 cm shift | 10 cm shift |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Stock Alpha-S | 85.7 | 88.0 | 70.3 | 77.1 | 80.3 | 80 | 55 |
+| A: plain fine-tune | 83.4 | 87.4 | 74.3 | 77.1 | 80.6 | 85 | 60 |
+| B: + future head | 85.7 | 83.4 | 74.9 | 75.4 | 79.9 | 85 | 65 |
+| C: + current-frame head | 84.6 | 88.0 | 73.7 | 77.7 | 81.0 | 90 | 70 |
+
+Paired comparisons on the 700 cases. Geometry = camera viewpoint, robot start pose and table
+layout (300 cases); appearance = the other four factors (400).
+
+| Comparison | Gap (points) | Wins | p |
+|---|---:|---:|---:|
+| B vs A, all | −0.7 | 36 / 41 | 0.65 |
+| B vs A, geometry | +1.7 | 21 / 16 | 0.51 |
+| B vs A, appearance | −2.5 | 15 / 25 | 0.15 |
+| C vs A, all | +0.4 | 41 / 38 | 0.82 |
+| C vs A, geometry | +2.7 | 26 / 18 | 0.29 |
+| B vs C, all | −1.1 | 34 / 42 | 0.42 |
+| A vs stock, all | +0.3 | 50 / 48 | 0.92 |
+
+No factor reaches p < 0.2 for B vs A (full tables: [test4/analysis/breakdown-2026-11-10.txt](test4/analysis/breakdown-2026-11-10.txt)).
+Of the 84 comparisons the script prints, one is nominally below 0.05 (B vs C on the Object suite,
+p = 0.039), about what chance yields at that count. A ties the stock checkpoint, so the fine-tuning
+itself is neutral and A is a fair baseline.
+
+**Probe.** A ridge regression from each checkpoint's frozen backbone features (main-camera tokens,
+held-out episodes) to the one-second-ahead change in the V-JEPA 2 embedding, the quantity B's head
+was trained on ([test4/analysis/probe-2026-11-10.txt](test4/analysis/probe-2026-11-10.txt)):
+
+| Checkpoint | Layer the head read: R² / cos | Layer 17: R² / cos |
+|---|---:|---:|
+| Stock | 0.21 / 0.44 | 0.27 / 0.50 |
+| A | 0.21 / 0.43 | 0.27 / 0.50 |
+| B | 0.33 / 0.50 | 0.29 / 0.51 |
+| C | 0.27 / 0.46 | 0.27 / 0.50 |
+
+The current-frame embedding is decodable from every checkpoint at R² 0.84–0.89.
 
 ## 4. What we expect from Test 4, stated before the arms run
 
@@ -114,6 +159,19 @@ learnable but hard; arm B may end no better than A, which would itself be a resu
 
 Arms are evaluated on the stress tests rather than standard LIBERO because Alpha-S already scores
 97–99% there: no headroom, so no test.
+
+### 4.1 What happened
+
+The third outcome: all three arms tie, overall and on the geometry factors. The probe adds the
+useful part. B's backbone carries more information about the future at the layer the head read
+(R² 0.21 → 0.33, no change for A) and a trace of it at layer 17, yet B's actions are no more robust
+under a moved camera, robot or object. The lesson changed the representation and not the
+behaviour: the action expert either does not use the information or 6,000 steps were too few for
+it to learn to. Power: 77 discordant pairs between B and A would have shown a true gap of about 3
+points at p < 0.05; smaller effects are not excluded. Set against Tests 1–3, where the released
+WAM trails the plain VLA by 28 points on these cases, the controlled result says the objective, in
+this form, moves robustness by at most a few points either way; the 28-point gap between the two
+released models comes from everything else that differs between them.
 
 ## 5. Threats to validity
 
@@ -128,6 +186,12 @@ Arms are evaluated on the stress tests rather than standard LIBERO because Alpha
   p-values are exact two-sided binomial; no multiplicity correction is applied across the 7 factors,
   though 6 of 7 survive one at 0.05/7 and the ranking was unchanged between the 656-case and the
   700-case analyses.
+- **Test 4 specifically.** One seed per arm; 6,000 steps; head weight 0.1; a single-camera,
+  one-second-ahead V-JEPA 2 embedding as target. That is a narrow form of world modelling (no
+  multi-step rollout, no pixel generation, no conditioning on the candidate action), and the
+  fine-tuning data contains none of the perturbations the arms are scored on, so the test asks
+  whether the lesson transfers, not whether training on perturbations helps. A different head,
+  horizon or budget could behave differently.
 - **External.** Simulation only (MuJoCo via robosuite), LIBERO tasks only, one checkpoint per
   model. The Fast-WAM checkpoint was run with the inputs its card specifies (two 224 px cameras);
   no attempt was made to tune it for the perturbed conditions.
@@ -139,7 +203,7 @@ Arms are evaluated on the stress tests rather than standard LIBERO because Alpha
 | [test1](test1) | `eval_delay.py`: LeRobot's LIBERO eval with a delay buffer; `eval_delay.patch` against the stock script |
 | [test2](test2) | `eval_shift.py`: the same loop with the object shift; `README.md` explains the shift geometry; Slurm pilot scripts |
 | [test3](test3) | Slurm jobs over the fixed 700-case sample (`t3_selection.json`); `analysis/` holds the name dump, the paired breakdown script and its 9 Nov outputs |
-| [test4](test4) | Training entry point, head, targets, probe, unit tests and Slurm jobs; its own README |
+| [test4](test4) | Training entry point, head, targets, probe, unit tests and Slurm jobs; its own README; `t4break.py` and `analysis/` hold the paired arm comparison and probe outputs |
 | [RESULTS.md](RESULTS.md) | All result tables in one place |
 
 Each `*.sh` is a Slurm job as run on a university cluster, one H100/H200/A100 per job. Environments:

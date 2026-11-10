@@ -1,0 +1,109 @@
+# python3 -I t4break.py, 10 Nov 2026, all four checkpoints on the same 700 LIBERO-Plus cases.
+cases: {'alphas': 700, 'armA': 700, 'armB': 700, 'armC': 700}
+
+== armB vs armA: overall (paired 700)
+group                           n   armB%   armA%    gap armB> armA>       p
+all                           700    79.9    80.6   -0.7    36    41  0.6488
+
+== armB vs armA: geometry vs appearance (paired 700)
+group                           n   armB%   armA%    gap armB> armA>       p
+appearance/other              400    80.2    82.8   -2.5    15    25  0.1539
+geometry (camera/pose/table)  300    79.3    77.7    1.7    21    16  0.5114
+
+== armB vs armA: by factor (paired 700)
+group                           n   armB%   armA%    gap armB> armA>       p
+layout: table                 100    94.0    92.0    2.0     5     3  0.7266
+robot start pose              100    70.0    68.0    2.0    10     8  0.8145
+camera view                   100    74.0    73.0    1.0     6     5  1.0000
+language                      100    85.0    89.0   -4.0     1     5  0.2188
+sensor noise                  100    63.0    69.0   -6.0     6    12  0.2379
+layout: extra objects         100    82.0    80.0    2.0     5     3  0.7266
+lighting                      100    91.0    93.0   -2.0     3     5  0.7266
+
+== armB vs armA: by suite (paired 700)
+group                           n   armB%   armA%    gap armB> armA>       p
+libero_10                     175    75.4    77.1   -1.7    14    17  0.7201
+libero_goal                   175    74.9    74.3    0.6    11    10  1.0000
+libero_object                 175    83.4    87.4   -4.0     3    10  0.0923
+libero_spatial                175    85.7    83.4    2.3     8     4  0.3877
+
+== armC vs armA: overall (paired 700)
+group                           n   armC%   armA%    gap armC> armA>       p
+all                           700    81.0    80.6    0.4    41    38  0.8221
+
+== armC vs armA: geometry vs appearance (paired 700)
+group                           n   armC%   armA%    gap armC> armA>       p
+appearance/other              400    81.5    82.8   -1.2    15    20  0.4996
+geometry (camera/pose/table)  300    80.3    77.7    2.7    26    18  0.2912
+
+== armC vs armA: by factor (paired 700)
+group                           n   armC%   armA%    gap armC> armA>       p
+layout: table                 100    97.0    92.0    5.0     7     2  0.1797
+robot start pose              100    72.0    68.0    4.0     9     5  0.4240
+camera view                   100    72.0    73.0   -1.0    10    11  1.0000
+language                      100    88.0    89.0   -1.0     2     3  1.0000
+sensor noise                  100    68.0    69.0   -1.0     5     6  1.0000
+layout: extra objects         100    79.0    80.0   -1.0     3     4  1.0000
+lighting                      100    91.0    93.0   -2.0     5     7  0.7744
+
+== armC vs armA: by suite (paired 700)
+group                           n   armC%   armA%    gap armC> armA>       p
+libero_10                     175    77.7    77.1    0.6    15    14  1.0000
+libero_goal                   175    73.7    74.3   -0.6    11    12  1.0000
+libero_object                 175    88.0    87.4    0.6     5     4  1.0000
+libero_spatial                175    84.6    83.4    1.1    10     8  0.8145
+
+== armB vs armC: overall (paired 700)
+group                           n   armB%   armC%    gap armB> armC>       p
+all                           700    79.9    81.0   -1.1    34    42  0.4222
+
+== armB vs armC: geometry vs appearance (paired 700)
+group                           n   armB%   armC%    gap armB> armC>       p
+appearance/other              400    80.2    81.5   -1.2    17    22  0.5224
+geometry (camera/pose/table)  300    79.3    80.3   -1.0    17    20  0.7428
+
+== armB vs armC: by factor (paired 700)
+group                           n   armB%   armC%    gap armB> armC>       p
+layout: table                 100    94.0    97.0   -3.0     1     4  0.3750
+robot start pose              100    70.0    72.0   -2.0     6     8  0.7905
+camera view                   100    74.0    72.0    2.0    10     8  0.8145
+language                      100    85.0    88.0   -3.0     1     4  0.3750
+sensor noise                  100    63.0    68.0   -5.0     6    11  0.3323
+layout: extra objects         100    82.0    79.0    3.0     5     2  0.4531
+lighting                      100    91.0    91.0    0.0     5     5  1.0000
+
+== armB vs armC: by suite (paired 700)
+group                           n   armB%   armC%    gap armB> armC>       p
+libero_10                     175    75.4    77.7   -2.3    12    16  0.5716
+libero_goal                   175    74.9    73.7    1.1    10     8  0.8145
+libero_object                 175    83.4    88.0   -4.6     2    10  0.0386
+libero_spatial                175    85.7    84.6    1.1    10     8  0.8145
+
+== armA vs alphas: overall (paired 700)
+group                           n   armA% alphas%    gap armA> alphas>       p
+all                           700    80.6    80.3    0.3    50    48  0.9196
+
+== armA vs alphas: geometry vs appearance (paired 700)
+group                           n   armA% alphas%    gap armA> alphas>       p
+appearance/other              400    82.8    80.5    2.2    29    20  0.2529
+geometry (camera/pose/table)  300    77.7    80.0   -2.3    21    28  0.3916
+
+== armA vs alphas: by factor (paired 700)
+group                           n   armA% alphas%    gap armA> alphas>       p
+layout: table                 100    92.0    89.0    3.0     9     6  0.6072
+robot start pose              100    68.0    76.0    -8.0     4    12  0.0768
+camera view                   100    73.0    75.0    -2.0     8    10  0.8145
+language                      100    89.0    87.0    2.0     5     3  0.7266
+sensor noise                  100    69.0    69.0    0.0    11    11  1.0000
+layout: extra objects         100    80.0    78.0    2.0     3     1  0.6250
+lighting                      100    93.0    88.0    5.0    10     5  0.3018
+
+== armA vs alphas: by suite (paired 700)
+group                           n   armA% alphas%    gap armA> alphas>       p
+libero_10                     175    77.1    77.1    0.0    14    14  1.0000
+libero_goal                   175    74.3    70.3    4.0    19    12  0.2810
+libero_object                 175    87.4    88.0   -0.6     6     7  1.0000
+libero_spatial                175    83.4    85.7   -2.3    11    15  0.5572
+
+# Test 2 mid-reach shift, 20 episodes per cell: 5 cm  stock 80, A 85, B 85, C 90
+#                                                10 cm stock 55, A 60, B 65, C 70

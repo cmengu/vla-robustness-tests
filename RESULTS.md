@@ -1,6 +1,6 @@
 # Results
 
-As of 9 November 2026. Success rates in percent. Models: Alpha-S = griffinlabs/Griffin-Alpha-S-LIBERO;
+As of 10 November 2026. Success rates in percent. Models: Alpha-S = griffinlabs/Griffin-Alpha-S-LIBERO;
 Fast-WAM = lerobot/fastwam_libero_uncond_2cam224. Simulator: LIBERO via LeRobot 0.6.1.
 
 ## Test 1: actions arrive late
@@ -66,14 +66,50 @@ Harness check: Fast-WAM on 10 unperturbed LIBERO cases through the same code pat
 
 ## Test 4: future-prediction head on Alpha-S
 
-Pilot, arm B, 500 steps, batch 16, H100 96 GB: peak GPU memory 49.1 GB; 197 prompt tokens per
-sample, 64 for the main camera; 1.62–1.65 s per step; flow loss 0.064–0.068; future loss 0.95–0.97
-(from 1.0); future cosine 0.20; fraction of frames with a valid 1-s-ahead target 0.91–0.95.
-Arm A trained (6,000 steps, 2 h on an H100, 48.5 GB peak, 1.08 s/step) and arm B trained (6,000 steps,
-1.5 h on an H200, 49.1 GB peak, 0.89 s/step). Arm B's future loss fell from 0.94 at step 1 to 0.58 at
-step 6,000; the cosine between predicted and true 1-s-ahead embedding rose from 0.01 to 0.59 (pilot: 0.20
-after 500 steps). Both arms are being evaluated on Test 3's 700 cases and Test 2's 5 cm and 10 cm
-mid-reach shifts. Arm C trained (6,000 steps, H200, 49.1 GB peak): its head, predicting the current
-embedding, reached loss 0.08 and cosine 0.96, against 0.58 and 0.59 for B's 1-s-ahead target. Arm A vs stock on
-612 paired cases: 81.0 vs 81.4, 40 vs 42 discordant, p = 0.91. Arm A so far (partial): object 84.1 / 90.8 (halves a/b) vs stock 88.6 / 87.4;
-spatial 84.1 / 82.8 vs 89.8 / 81.6; goal-b 71.3 vs 67.8; 10 cm mid-reach 60 vs 55; 5 cm 85 vs 80.
+Three arms fine-tuned from griffinlabs/Griffin-Alpha-S-LIBERO, 6,000 steps, batch 16: A plain;
+B plus a head predicting the V-JEPA 2 embedding of the main camera 1 s ahead (weight 0.1); C the
+same head predicting the current embedding. Pilot (arm B, 500 steps, H100 96 GB): 49.1 GB peak,
+1.65 s/step, future loss 0.95–0.97, cosine 0.20.
+
+Training: A 2 h on an H100 (48.5 GB peak, 1.08 s/step); B 1.5 h on an H200 (49.1 GB, 0.89 s/step);
+C 1.5 h on an H200 (49.1 GB). B's future loss 0.94 (step 1) → 0.58 (step 6,000), cosine 0.01 → 0.59.
+C's loss → 0.08, cosine → 0.96.
+
+### Success on the same 700 LIBERO-Plus cases and the Test 2 shift cells (20 episodes)
+
+| Arm | Spatial | Object | Goal | Long | All 700 | 5 cm mid-reach | 10 cm mid-reach |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Stock Alpha-S | 85.7 | 88.0 | 70.3 | 77.1 | 80.3 | 80 | 55 |
+| A | 83.4 | 87.4 | 74.3 | 77.1 | 80.6 | 85 | 60 |
+| B | 85.7 | 83.4 | 74.9 | 75.4 | 79.9 | 85 | 65 |
+| C | 84.6 | 88.0 | 73.7 | 77.7 | 81.0 | 90 | 70 |
+
+### Paired comparisons by factor (n = 100 each), success %
+
+| Factor | A | B | C | B>A / A>B | p | C>A / A>C | p |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Camera viewpoint | 73 | 74 | 72 | 6 / 5 | 1.00 | 10 / 11 | 1.00 |
+| Robot start pose | 68 | 70 | 72 | 10 / 8 | 0.81 | 9 / 5 | 0.42 |
+| Table layout | 92 | 94 | 97 | 5 / 3 | 0.73 | 7 / 2 | 0.18 |
+| Sensor noise | 69 | 63 | 68 | 6 / 12 | 0.24 | 5 / 6 | 1.00 |
+| Extra objects | 80 | 82 | 79 | 5 / 3 | 0.73 | 3 / 4 | 1.00 |
+| Language rewording | 89 | 85 | 88 | 1 / 5 | 0.22 | 2 / 3 | 1.00 |
+| Lighting | 93 | 91 | 91 | 3 / 5 | 0.73 | 5 / 7 | 0.77 |
+| Geometry (300) | 77.7 | 79.3 | 80.3 | 21 / 16 | 0.51 | 26 / 18 | 0.29 |
+| Appearance (400) | 82.8 | 80.2 | 81.5 | 15 / 25 | 0.15 | 15 / 20 | 0.50 |
+| All (700) | 80.6 | 79.9 | 81.0 | 36 / 41 | 0.65 | 41 / 38 | 0.82 |
+
+B vs C, all 700: 34 / 42, p = 0.42; Object suite 83.4 vs 88.0, 2 / 10, p = 0.039 (the only
+p < 0.05 among the 84 comparisons printed). A vs stock, all 700: 50 / 48, p = 0.92; start pose
+68 vs 76, 4 / 12, p = 0.08. Full output: [test4/analysis/breakdown-2026-11-10.txt](test4/analysis/breakdown-2026-11-10.txt).
+
+### Probe: held-out R² / cosine of a ridge regression from backbone features to the 1-s-ahead change in the V-JEPA 2 embedding
+
+| Checkpoint | Layer the head read (input of the last decoder layer) | Layer 17 | Current embedding, head layer |
+|---|---:|---:|---:|
+| Stock | 0.210 / 0.435 | 0.270 / 0.498 | 0.845 |
+| A | 0.208 / 0.433 | 0.268 / 0.497 | 0.844 |
+| B | 0.334 / 0.502 | 0.291 / 0.507 | 0.857 |
+| C | 0.272 / 0.461 | 0.269 / 0.499 | 0.887 |
+
+Source: [test4/analysis/probe-2026-11-10.txt](test4/analysis/probe-2026-11-10.txt).

@@ -1,0 +1,12 @@
+# probe.py output, 10 Nov 2026 (job 1102799). Ridge regression from mean-pooled backbone features
+# (main-camera tokens) on held-out episodes to the standardised V-JEPA 2 target. "change" =
+# emb(t+10) - emb(t) (what arm B's head was trained on); "current" = emb(t) (arm C's target).
+# layer-2 = input of the last decoder layer (the tensor the head read); layer17 = mid-backbone.
+A_layer-2.json         change R2 0.208 cos 0.433 | current R2 0.844
+A_layer17.json         change R2 0.268 cos 0.497 | current R2 0.890
+B_layer-2.json         change R2 0.334 cos 0.502 | current R2 0.857
+B_layer17.json         change R2 0.291 cos 0.507 | current R2 0.893
+C_layer-2.json         change R2 0.272 cos 0.461 | current R2 0.887
+C_layer17.json         change R2 0.269 cos 0.499 | current R2 0.893
+base_layer-2.json      change R2 0.210 cos 0.435 | current R2 0.845
+base_layer17.json      change R2 0.270 cos 0.498 | current R2 0.891

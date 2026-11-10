@@ -6,7 +6,7 @@ ARM=${1:?ARM A|B|C}
 POLICY="${WORK:-$HOME/test4_work}/arm_$ARM/checkpoints/last/pretrained_model"
 [ -f "$POLICY/config.json" ] || { echo "no checkpoint at $POLICY"; exit 1; }
 D=$(cd "$(dirname "$0")" && pwd); cd $HOME
-G=(h100-47 a100-40); i=0
+G=(h100-47 a100-40 a100-80 h200-141); i=0
 for S in libero_spatial libero_object libero_goal; do for H in a b; do
   sbatch -J e$ARM-$S-$H --gpus=${G[i%2]} $D/slurm_eval_arm.sh $ARM $S $H; i=$((i+1))
 done; done
