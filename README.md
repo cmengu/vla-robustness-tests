@@ -40,6 +40,8 @@ Two policies, both trained on LIBERO and both at 94–100% on the standard LIBER
 
 Three stress tests on the released checkpoints, then one controlled experiment.
 
+![The three stress tests: delayed actions, a moved target object with the 15 cm mid-reach trigger, and the seven LIBERO-Plus perturbation factors](figures/fig0_tests.png)
+
 | Test | Stress | Sample | Statistic |
 |---|---|---|---|
 | 1 | Each action is applied d steps (0.1 s each) after the frame it was computed from, d ∈ {0, 2, 5, 10, 20} | libero_object, 100 episodes per point | success rate |
@@ -47,27 +49,11 @@ Three stress tests on the released checkpoints, then one controlled experiment.
 | 3 | A [LIBERO-Plus](https://arxiv.org/abs/2510.13626) perturbation: camera viewpoint, robot start pose, table layout, extra objects, lighting, sensor noise or reworded instruction | 700 cases sampled across four suites, 100 per factor, one episode each, identical cases for both models | paired success; exact McNemar test on discordant pairs |
 | 4 | Fine-tune Alpha-S 6,000 steps three ways: A stock; B plus a head predicting the V-JEPA 2 embedding of the main camera 1 s ahead (weight 0.1); C the same head predicting the current embedding | arms scored on Test 3's 700 cases and Test 2's 10 cm mid-reach shift | paired, as above |
 
-Test 4's arms, all starting from the same released checkpoint and the same 6,000 fine-tuning steps:
+Test 4's design. The head reads the input of the last backbone layer (the tensor the action
+expert's last keys and values are computed from), so the lesson has to live where the expert can
+see it; the head itself is thrown away after training.
 
-```
-                    griffinlabs/Griffin-Alpha-S-LIBERO
-                                   |
-              +--------------------+--------------------+
-              |                    |                    |
-            arm A                arm B                arm C
-         action loss          action loss          action loss
-            only                 + 0.1 x              + 0.1 x
-                             future loss:          current loss:
-                           predict V-JEPA 2       predict V-JEPA 2
-                           embedding of the       embedding of the
-                           main camera 1 s        main camera NOW
-                           AHEAD                  (same head)
-              |                    |                    |
-              +--------------------+--------------------+
-                                   |
-                  head discarded; each arm scored on
-                  Test 3's 700 cases + Test 2's shifts
-```
+![Test 4 design: Alpha-S backbone and action expert, with the auxiliary head reading layer 35 and predicting the V-JEPA 2 embedding of the main camera one second ahead](figures/fig4_test4_design.png)
 
 Test 3's pairing matters: a 28-point gap on 700 shared cases is a different claim from a 28-point
 gap on two independent samples. The per-factor breakdown (Section 3.3) was run after the overall
@@ -233,7 +219,7 @@ released models comes from everything else that differs between them.
 | [test3](test3) | Slurm jobs over the fixed 700-case sample (`t3_selection.json`); `analysis/` holds the name dump, the paired breakdown script and its 9 Nov outputs |
 | [test4](test4) | Training entry point, head, targets, probe, unit tests and Slurm jobs; its own README; `t4break.py` and `analysis/` hold the paired arm comparison and probe outputs |
 | [RESULTS.md](RESULTS.md) | All result tables in one place |
-| [figures](figures) | The three figures above and `make_figures.py`, which renders them from the numbers in RESULTS.md |
+| [figures](figures) | The figures above: `make_diagrams.py` draws the two schematics, `make_figures.py` renders the three result charts from the numbers in RESULTS.md |
 
 Each `*.sh` is a Slurm job as run on a university cluster, one H100/H200/A100 per job. Environments:
 LeRobot 0.6.1 with Griffin's [alpha-s](https://github.com/griffinlabs-ai/alpha-s) plugin for Alpha-S;
