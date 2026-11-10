@@ -47,6 +47,28 @@ Three stress tests on the released checkpoints, then one controlled experiment.
 | 3 | A [LIBERO-Plus](https://arxiv.org/abs/2510.13626) perturbation: camera viewpoint, robot start pose, table layout, extra objects, lighting, sensor noise or reworded instruction | 700 cases sampled across four suites, 100 per factor, one episode each, identical cases for both models | paired success; exact McNemar test on discordant pairs |
 | 4 | Fine-tune Alpha-S 6,000 steps three ways: A stock; B plus a head predicting the V-JEPA 2 embedding of the main camera 1 s ahead (weight 0.1); C the same head predicting the current embedding | arms scored on Test 3's 700 cases and Test 2's 10 cm mid-reach shift | paired, as above |
 
+Test 4's arms, all starting from the same released checkpoint and the same 6,000 fine-tuning steps:
+
+```
+                    griffinlabs/Griffin-Alpha-S-LIBERO
+                                   |
+              +--------------------+--------------------+
+              |                    |                    |
+            arm A                arm B                arm C
+         action loss          action loss          action loss
+            only                 + 0.1 x              + 0.1 x
+                             future loss:          current loss:
+                           predict V-JEPA 2       predict V-JEPA 2
+                           embedding of the       embedding of the
+                           main camera 1 s        main camera NOW
+                           AHEAD                  (same head)
+              |                    |                    |
+              +--------------------+--------------------+
+                                   |
+                  head discarded; each arm scored on
+                  Test 3's 700 cases + Test 2's shifts
+```
+
 Test 3's pairing matters: a 28-point gap on 700 shared cases is a different claim from a 28-point
 gap on two independent samples. The per-factor breakdown (Section 3.3) was run after the overall
 result was seen; it is reported as a hypothesis for Test 4, not a pre-registered finding.
@@ -67,6 +89,8 @@ Full tables, including per-suite and per-suite-by-factor breakdowns, are in
 | Fast-WAM | 94 | 94 | 85 | 80 | 41 |
 | Alpha-S, re-plan every step | 99 | 93 | 95 | 81 | 50 |
 | Alpha-S, re-plan every 10 steps | 97 | 96 | 89 | 81 | 34 |
+
+![Test 1: success against delay for the three runs](figures/fig1_delay.png)
 
 The curves run together. No delay advantage for the world-action model.
 
@@ -96,6 +120,8 @@ the move, and is dropped.
 | Language rewording | 100 | 87.0 | 68.0 | 19.0 | 23 | 4 | 0.0003 |
 | Lighting | 100 | 88.0 | 79.0 | 9.0 | 13 | 4 | 0.049 |
 | All | 700 | 80.3 | 51.9 | 28.4 | 231 | 32 | <0.0001 |
+
+![Test 3: success by perturbation factor, Alpha-S against Fast-WAM, with discordant-pair counts](figures/fig2_factors.png)
 
 By suite: Spatial 85.7 vs 51.4, Object 88.0 vs 71.4, Goal 70.3 vs 40.0, Long 77.1 vs 44.6 (175 cases each).
 Fast-WAM scores 100% on 10 unperturbed LIBERO cases through the same code path, so the drop is the
@@ -148,6 +174,8 @@ was trained on ([test4/analysis/probe-2026-11-10.txt](test4/analysis/probe-2026-
 | C | 0.27 / 0.46 | 0.27 / 0.50 |
 
 The current-frame embedding is decodable from every checkpoint at R² 0.84–0.89.
+
+![Test 4: the three arms by factor, and the probe's held-out R² per checkpoint](figures/fig3_arms.png)
 
 ## 4. What we expect from Test 4, stated before the arms run
 
@@ -205,6 +233,7 @@ released models comes from everything else that differs between them.
 | [test3](test3) | Slurm jobs over the fixed 700-case sample (`t3_selection.json`); `analysis/` holds the name dump, the paired breakdown script and its 9 Nov outputs |
 | [test4](test4) | Training entry point, head, targets, probe, unit tests and Slurm jobs; its own README; `t4break.py` and `analysis/` hold the paired arm comparison and probe outputs |
 | [RESULTS.md](RESULTS.md) | All result tables in one place |
+| [figures](figures) | The three figures above and `make_figures.py`, which renders them from the numbers in RESULTS.md |
 
 Each `*.sh` is a Slurm job as run on a university cluster, one H100/H200/A100 per job. Environments:
 LeRobot 0.6.1 with Griffin's [alpha-s](https://github.com/griffinlabs-ai/alpha-s) plugin for Alpha-S;
